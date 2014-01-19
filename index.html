@@ -1,0 +1,659 @@
+<html>
+  <head>
+     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+     <link rel="stylesheet" href="jquery.mobile-1.3.1.min.css" />
+     <link rel="stylesheet" type="text/css" href="tolito-1.0.5.min.css" />
+     <script type="text/javascript" src="jquery-1.9.1.min.js"></script>
+     <script src="jquery.timer.js"></script>
+     <script type="text/javascript" src="jquery.mobile-1.3.1.min.js"></script>
+     <script type="text/javascript" src="tolito-1.0.5.min.js"></script>
+     <script type="text/javascript" charset="utf-8" src="phonegap.js"></script>
+     <script type="text/javascript">
+     	var ajaxRequest;
+		document.addEventListener("deviceready", onDeviceReady, false);
+		function onDeviceReady(){
+			//alert("device ready");
+			document.addEventListener("backbutton", onBackKeyDown, false);
+			
+			
+				document.addEventListener("pause", onApplicationPause, false);
+				document.addEventListener("resume", onApplicationResume, false);
+				if(getDevice() == "Android"){
+				  $('#exit-button').removeClass('visibility-hidden');
+				}
+			
+			var proVersionLink = "#";
+        	if(getDevice() == "Android"){
+				proVersionLink = "https://play.google.com/store/apps/details?id=com.jlojic.basesaspracticeexampro";
+        	}else if(getDevice() == "iPhone" || getDevice() == "iPad"){
+        		proVersionLink = "https://itunes.apple.com/us/app/base-sas-practice-exam-pro/id791501917?ls=1&mt=8";
+        	
+        	}else{
+        		proVersionLink = "#";
+        	}
+        	//alert(proVersionLink);	
+        	 $('#get-pro-version-home').attr('href' , proVersionLink);
+            $('#get-pro-version-result').attr('href' , proVersionLink);
+		}
+		
+			function onApplicationPause(){
+				pageId = $.mobile.activePage.attr('id');
+				if(pageId == "exam"){
+					timer.pause();				
+				}			
+			}
+			
+			function onApplicationResume(){
+				pageId = $.mobile.activePage.attr('id');
+				if(pageId == "exam"){
+					timer.play(false);				
+				}			
+			}
+		
+		function onBackKeyDown(evt) {
+			evt.preventDefault();
+			pageId = $.mobile.activePage.attr('id');
+			if(pageId == "main"){
+    			$( "#exit-dialog-popup" ).popup( "open" )
+    		}else if(pageId == "exam"){
+    			$( "#quit-dialog-popup" ).popup( "open" )
+    		}else if(pageId == "result"){
+    			$.mobile.changePage('#main');
+    		}else if(pageId == "help"){
+    			$.mobile.changePage('#main');
+    		}else if(pageId == "settings"){
+    			$.mobile.changePage('#main');
+    		}else if(pageId == "top-rankers"){
+    			$.mobile.changePage('#main');
+    		}
+		}
+		
+		function hasConnection(){
+			var networkState = navigator.network.connection.type;
+			if(networkState == Connection.NONE){
+				return false;
+			}
+			return true;
+		}
+		
+		function showExamPage(){
+			if(hasConnection() == false){
+           	  	alert("No internet connection found. Please connect to internet to access the exam feature");
+           	}else{
+           		$('#progressbar').css('display','block');
+           		TolitoProgressBar('progressbar')
+                    .setOuterTheme('b')
+                    .isIndefinite(true)
+                    .isMini(true)
+                    .showCounter(false)
+                    .logOptions()
+                    .build();
+           		$('#exam-content').addClass('visibility-hidden');
+              	$('#previous-button').addClass('visibility-hidden');
+              	$('#show-result-button').addClass('visibility-hidden');
+              	$('#next-button').addClass('visibility-hidden');
+              	//$('#quit-button').addClass('visibility-hidden');
+              	$('#previous-button').addClass('visibility-hidden');
+              	$('#exam-header h1').html("Loading...");
+              	$('#timer').html("");
+              	ajaxRequest = $.ajax({
+                 	url: base_url,
+                 	crossDomain: true,
+                 	type: 'get',
+                 	dataType: 'jsonp',
+                 	success: function(data){
+                 			 if(timer != null)
+            					timer.stop();
+                             questions = data;
+                             current_question_num = 1;
+                             total_questions = questions.length;
+                             $('#question').html('<strong>1. </strong>' + questions[0].question);
+                             $('#option1').html('<strong>A. </strong>' + questions[0].option1);
+                             $('#option2').html('<strong>B. </strong>' + questions[0].option2);
+                             $('#option3').html('<strong>C. </strong>' + questions[0].option3);
+                             $('#option4').html('<strong>D. </strong>' + questions[0].option4);
+                             $('#exam-content').removeClass('visibility-hidden');
+                             $('input[type="radio"]').prop('checked', false).checkboxradio('refresh');
+                             $('#exam-header h1').html('Ques ' + current_question_num + ' of ' + total_questions);
+                             $('#next-button').removeClass('visibility-hidden');
+                             //$('#quit-button').removeClass('visibility-hidden');
+                             $('#progressbar').css('display','none');
+                             $('#show-result-button').removeClass('visibility-hidden');
+                             answers = new Array();
+                             time = 0;
+                             sec = 0;      
+                             timer = $.timer(function(){
+                               time = time + 1;
+                               hour = parseInt(time/(60*60));
+                               if(hour<=9)
+                                 hour = '0'+hour;
+                               
+                               min = parseInt(time%(60*60)/60);
+
+                               if(min<=9)
+                                 min = '0'+min;
+
+                               if(time%60 == 0)
+                                 sec = 0;
+                               else
+                                 sec = sec + 1;
+                               if(sec<=9)
+                                 sec_text = '0'+sec;
+                               else
+                                 sec_text = sec;
+                               $('#timer').html(hour + ":" + min + ":" + sec_text);
+                               if(time == (110*60)){
+            						timer.stop();
+                                 	$( "#time-over-dialog-popup" ).popup( "open" )
+                               }
+                             }, 1000, true);                                   
+                    },
+                 	error: function(error){
+                            alert('Unknown error. Try again later.');
+                            $.mobile.changePage('#main');
+                    }
+                });//END OF AJAX
+           		
+           	  	$.mobile.changePage('#exam');
+           	}
+		}
+		
+        base_url = 'http://www.jlojic.com/basesas/getbasesas64questions?api_key=abc123';
+        questions = null;
+        time = 0;
+        current_question_num = 1;
+        total_questions = 8;
+        answers = null;
+        var timer = null;
+        $(document).ready(function(){
+
+        	
+    
+           
+           //alert("Nothing comes free in this world. If you find this app useful, Please support us by buying the PRO version, if you cannot buy atleast click on the ads regularly.");
+                  
+           $('#exam').on('pageinit', function(){
+           });
+
+           $('input[name="answer"]').bind('change', function(){
+              answers[current_question_num - 1] = $('input[name="answer"]:checked').val();
+           });
+           $('#result').on('pagebeforeshow', function(){
+              d= "";
+              attempted = 0;
+              correct = 0;
+              wrong = 0;
+              for(i=0;i<total_questions;i++){
+                 if(answers[i] != undefined){
+                   attempted++;
+                   if(answers[i] == questions[i].answer)
+                     correct++;
+                   else
+                     wrong++;
+                 }else{
+
+                 }
+              }
+              score = (correct/total_questions)*100;
+              score = score.toFixed(2);
+              if((correct/total_questions)*100 >= 70){
+                color_style = 'style="color:green;font-weight:bold;"';
+                res = 'Pass';
+              }
+              else {
+                color_style = 'style="color:red;font-weight:bold;"';
+                res = 'Fail'
+              }
+              d = '<table style="margin:auto;">' +
+                      '<tr>' +
+                         '<td>Total questions</td>' +
+                         '<td>' + total_questions + '</td>' +
+                      '</tr>' +
+                      '<tr>' +
+                         '<td>Attempted</td>' +
+                         '<td>' + attempted + '</td>' +
+                      '</tr>' +
+                      '<tr>' +
+                         '<td>Correct</td>' +
+                         '<td>' + correct + '</td>' +
+                      '</tr>' +
+                      '<tr>' +
+                         '<td>Wrong</td>' +
+                         '<td>' + wrong + '</td>' +
+                      '</tr>' +
+                      '<tr>' +
+                         '<td>Result</td>' +
+                         '<td '+ color_style + '>' + res + '</td>' +
+                      '</tr>' +
+                   '</table>';
+                   
+            $('#result #result-content').html(d);
+            
+              score_percent = score;
+			    if(score_percent >= 70)
+				  $('#progress-bar').css('background-color','#006600');
+				else
+				  $('#progress-bar').css('background-color','#ee0000');
+				  
+                $('#progress-bar').animate({width:score_percent + '%'},score_percent * 30);
+				
+				s = 0;
+				score_percent_int = parseInt(score_percent);
+				var t = setInterval(function(){
+				  $('#score-text').html(s + '%');
+				  if(s == score_percent_int){
+				    clearInterval(t);
+					$('#score-text').html(score_percent + '%');
+				  }
+				  else
+				    s += 1;  
+				}, 30);
+            
+            
+            /*$.ajax({
+		         url: 'http://www.jlojic.com/basesas/getTopRankers?api_key=abc123',
+		         crossDomain: true,
+		         type: 'get',
+		         dataType: 'jsonp',
+		         success: function(data){
+		                  alert(data.msg);
+		                  if(data.msg == "Unknown error")
+		                     $('#rank p').html(data.msg);
+		                  else{
+		                     rank = data.msg + "";
+		                     ch = rank.charAt(rank.length -1)
+		                     if(ch == "0" || ch == "4" || ch == "5" || ch == "6" || ch == "7" ||ch == "8" || ch == "9")
+		                        txt = "th";
+		                     else if(ch == 1)
+		                        txt = "st"
+		                     else if(ch == 2)
+		                        txt = "nd";
+		                     else if(ch == 3)
+		                       txt = "rd";
+		
+		                     $('#rank p').html(rank + txt);
+		                  }
+		         },
+		         error: function(error){
+		         	alert(error);
+		         }
+		    });*/
+            
+            
+            
+            if(localStorage.getItem("user-name")){
+            		$('#result #result-content').append('<br/><p style="text-align:center">Your rank is</p>');
+            		$('#result #result-content').append('<div id="rank"><p style="text-align:center;font-size:30px;"></p></div>');
+            		$('#rank p').html('XX');
+            		$('#result #result-content').append('<div><p style="text-align:center">to know your rank, get the PRO version</p></div>');
+
+            		values = "&user_uuid=" + device.uuid + "&user_name=" + localStorage.getItem("user-name") +
+            		         "&user_city=" + localStorage.getItem("user-city") +  "&user_email=" + localStorage.getItem("user-email") + 
+            		         "&user_device=" + getDevice() + "&user_country=" + localStorage.getItem("user-country") + 
+            		         "&user_score=" + score + "&user_type=basesaslite";
+		            
+           }//end of if(localStorage.getItem("user-name")
+           else{
+             	alert("Please fill the details in settings page to submit your score to our server.");
+           }
+              
+           });
+           $('#exam').on('pagebeforeshow', function(e,data){
+           });
+           
+	       $('#top-rankers').on('pagebeforeshow', function(){
+	        	
+	        	$('#top-rankers-content').html('<p style="text-align:center">Retrieving list...</p>');
+	        	$.ajax({
+	        		url: 'http://www.jlojic.com/basesas/getTopRankers?api_key=abc123&limit=10&user_type=basesaslite',
+	        		crossDomain: true,
+	                type: 'get',
+	                dataType: 'jsonp',
+	        		success: function(data){
+	        		    table = '<table border="1" style="margin:auto;width:100%;text-align:center;"><tr><th>Rank</th><th>Name</th><th>Score</th><th>Location</th></tr>';
+	        			for(i=0;i<data.length;i++){
+	        			  tr = '<tr>' + 
+	        			          '<td>' + (i+1) + '</td>' +
+	        			          '<td>' + data[i].user_name + '</td>' +
+	        			          '<td>' + data[i].user_score + '</td>' +
+	        			          '<td>' + data[i].user_city + ', ' + data[i].user_country + '</td>' +
+	        			          '</tr>';
+	        			  table += tr;
+	        			}
+	        			table += '</table>';
+	        			$('#top-rankers-content').html(table);
+	        		},
+	        		error: function(error){
+	        			alert(error);
+	        		}
+	        	});
+	        });
+	        
+	         $('#settings').on('pagebeforeshow', function(){
+			   if(localStorage.getItem("user-name")){
+			      $('#user-name').val(localStorage.getItem("user-name"));
+			      $('#user-email').val(localStorage.getItem("user-email"));
+			      $('#user-city').val(localStorage.getItem("user-city"));
+			      $('#user-country').val(localStorage.getItem("user-country"));
+			   }else{
+			      $('#user-name').val("");
+			      $('#user-email').val("");
+			      $('#user-city').val("");
+			      $('#user-country').val("");
+			   } 		 
+			
+			});
+           
+           
+        }); //end of document.ready
+        function next_question(){
+           if(current_question_num < questions.length) {
+             current_question_num += 1;
+             i = current_question_num - 1;
+             $('#question').html('<strong>' + (i+1) + '. </strong>' + questions[i].question);
+             $('#option1').html('<strong>A. </strong>' + questions[i].option1);
+             $('#option2').html('<strong>B. </strong>' + questions[i].option2);
+             $('#option3').html('<strong>C. </strong>' + questions[i].option3);
+             $('#option4').html('<strong>D. </strong>' + questions[i].option4);
+             $('input[name="answer"]').removeAttr('checked').checkboxradio("refresh");
+             if(answers[i] != undefined){
+                $('input[id="' + answers[i] + '"]').prop('checked', true).checkboxradio("refresh");
+             }
+             if(current_question_num == total_questions){
+               $('#next-button').addClass('visibility-hidden');
+             }
+             if(current_question_num == 2){
+               $('#previous-button').removeClass('visibility-hidden');
+             }
+             $('#exam-header h1').html('Ques ' + current_question_num + ' of ' + total_questions);
+           }else{
+              alert('over');
+           }
+        }
+        function previous_question(){
+           if(current_question_num > 1) {
+             current_question_num -= 1;
+             i = current_question_num - 1;
+             $('#qnum').html((i+1)+'.&nbsp;&nbsp;');
+             $('#question').html('<strong>' + (i+1) + '. </strong>' + questions[i].question);
+             $('#option1').html('<strong>A. </strong>' + questions[i].option1);
+             $('#option2').html('<strong>B. </strong>' + questions[i].option2);
+             $('#option3').html('<strong>C. </strong>' + questions[i].option3);
+             $('#option4').html('<strong>D. </strong>' + questions[i].option4);
+             $('input[name="answer"]').removeAttr('checked').checkboxradio("refresh");
+             $('#exam-header h1').html('Ques ' + current_question_num + ' of ' + total_questions);
+             if(answers[i] != undefined){
+               $('input[id="' + answers[i] + '"]').prop('checked', true).checkboxradio("refresh");
+             }
+             if(current_question_num == total_questions-1){
+               //$('#show-result-button').removeClass('visibility-hidden');
+               $('#next-button').removeClass('visibility-hidden');
+             }
+             if(current_question_num == 1){
+               $('#previous-button').addClass('visibility-hidden');
+             }
+           }else{
+              alert('over');
+           }
+        }
+        function exit_app(){
+            navigator.app.exitApp();
+        }
+        function quit_exam(){
+            try{
+        	if(ajaxRequest)
+        		ajaxRequest.abort();
+            if(timer != null)
+            		timer.stop();
+            }catch(e){
+            }
+            $.mobile.changePage('#main');
+        }
+        function show_result(){
+           if(timer != null)
+            		timer.stop();
+            $.mobile.changePage('#result');
+        }
+        
+        
+		
+		function submitSettingsForm(){
+          user_name = $('#user-name').val();
+		  user_email = $('#user-email').val();
+		  user_city = $('#user-city').val();
+		  user_country = $('#user-country').val();
+		  is_valid = validate_form(user_name, user_email, user_city, user_country);
+		  
+		  if(is_valid == false){
+		      alert("Please fill all the details");
+			  return;
+		  }
+		  
+		  if(hasConnection() == false){
+		  	alert("Cannot submit, no internet connection");
+		  	return;
+		  }
+		  
+		  values = '&user_uuid=' + device.uuid + '&user_name=' + user_name + '&user_email=' + user_email + 
+		           '&user_city=' + user_city + '&user_country=' + user_country + "&user_device=" + getDevice() +
+				   '&user_type=basesaslite';
+
+          
+		  $('#user-form-popup').popup('open');
+		  setInterval(function(){$('#user-form-popup').popup('close');}, 2000);
+		  $.ajax({
+		      url: 'http://www.jlojic.com/basesas/saveuser?api_key=abc123' + values,
+			  crossDomain: true,
+              type: 'get',
+              dataType: 'jsonp',
+              success: function(data){
+                 if(data.msg == "success"){
+				   localStorage.setItem("user-name", user_name);
+				   localStorage.setItem("user-email", user_email);
+				   localStorage.setItem("user-city", user_city);
+				   localStorage.setItem("user-country", user_country);
+				}
+			  },
+			  error: function(error){
+			    alert(error);
+			  }
+		  });		
+		}
+		
+		function validate_form(user_name, user_email, user_city, user_country){
+			if(user_name == "" || user_email == "" || user_city == "" || user_country == "Select country")
+		    	return false;
+		}
+		
+		function closePopUp(id){
+			$('#'+id).popup('close');
+		}
+		
+		function getDevice(){
+		  var inPlatform = device.platform;
+                  //alert(inPlatform);
+                  var outPlatform = "";
+		  
+		  if(inPlatform.indexOf("iPhone") >= 0)
+		     outPlatform = "iPhone";
+		  else if(inPlatform.indexOf("iPad") >= 0)
+		     outPlatform = "iPad";
+		  else if(inPlatform.indexOf("Android") >= 0)
+		     outPlatform = "Android";
+		  else if(inPlatform.indexOf("Blackberry") >= 0)
+		     outPlatofrm = "BlackBerry";
+		  
+		  	 
+		  	 //outPlatform = "iPhone";
+		  
+		  
+		  return outPlatform;
+		    
+		}
+        
+     </script>
+     <style>
+       .options{
+         font-weight: bold;
+       }
+       .visibility-hidden{
+         visibility: hidden;
+       }
+       .ui-input-text{
+         /*width: 50px;
+         display:inline-block;*/
+       }
+     </style>
+  </head>
+  <body>
+     <div data-role="page" id="main">
+         <div data-role="header" data-tap-toggle="false">
+           <h1>Base SAS - Lite</h1>
+           <a href="#exit-dialog-popup" data-rel="popup" id="exit-button" class="ui-btn-right visibility-hidden">Exit</a>
+         </div>
+         <div data-role="popup" id="exit-dialog-popup" data-position-to="window" data-overlay-theme="a" data-dismissible="false">
+               <p style="text-align:center"><strong>Are you sure want to exit</strong></p>
+               <div class="ui-grid-a">
+  	             <div class="ui-block-a" style="text-align:right"><a href="javascript: exit_app()" data-role="button" data-inline="true">Yes</a></div>
+  	             <div class="ui-block-b"><a href="javascript: closePopUp('exit-dialog-popup')" data-role="button" data-inline="true">No</a></div>
+               </div>
+         </div>
+         <div data-role="content">
+            <ul data-role="listview" data-inset="true">
+              <li><a href="javascript: showExamPage();"">Virtual exam</a></li>
+              <li><a href="#top-rankers">Top rankers</a></li>
+              <li><a href="#settings">Settings</a></li>
+              <li><a href="#help">Help</a></li>
+              <li><a href="#" id="get-pro-version-home">Get Pro version</a></li>
+            </ul>
+         </div>
+     </div>
+
+     <div data-role="page" id="exam">
+        <div data-role="header" id="exam-header" data-position="fixed" data-tap-toggle="false">
+           <a href="#quit-dialog-popup" data-rel="popup" class="ui-btn-left" id="quit-button">Quit</a>
+           <h1>Practice exam</h1>
+           <a href="#show-result-dialog-popup" data-rel="popup" class="ui-btn-right visibility-hidden" id="show-result-button">Show result</a>
+        </div>
+        <div data-role="popup" id="quit-dialog-popup" data-position-to="window" data-overlay-theme="a" data-dismissible="false">
+	        <p style="text-align:center"><strong>Are you sure want to quit the exam</strong></p>
+            <div class="ui-grid-a">
+	           <div class="ui-block-a" style="text-align:right"><a href="javascript:quit_exam()" data-role="button" data-inline="true">Yes</a></div>
+	           <div class="ui-block-b"><a href="javascript: closePopUp('quit-dialog-popup')" data-role="button" data-inline="true">No</a></div>
+            </div>
+         </div>
+       <div id="show-result-dialog-popup" data-role="popup" data-position-to="window" data-overlay-theme="a" data-dismissible="false">
+             <p style="text-align:center"><strong>Have you completed the exam</strong></p>
+             <div class="ui-grid-a">
+	           <div class="ui-block-a" style="text-align:right"><a href="javascript:show_result()" data-role="button" data-inline="true">Yes</a></div>
+	           <div class="ui-block-b"><a href="javascript: closePopUp('show-result-dialog-popup')" data-role="button" data-inline="true">No</a></div>
+             </div>
+       </div>
+       <div id="time-over-dialog-popup" data-role="popup" data-position-to="window" data-overlay-theme="a" data-dismissible="false">
+             <p style="text-align:center"><strong id="time-over-dialog-content">Time is over</strong></p>
+		     <div style="text-align:center"><a href="#result" data-role="button" data-inline="true">Ok</a></div>
+       </div>
+        <div data-role="content">
+        	<div id="progressbar"></div>
+        	<div id="exam-content">
+            	<div id="question"></div>
+            	<div id="option1"></div>
+            	<div id="option2"></div>
+            	<div id="option3"></div>
+            	<div id="option4"></div>
+	
+            	<fieldset data-role="controlgroup" data-type="horizontal">
+	      		<legend><strong>your response</strong></legend>
+     	      		<input type="radio" name="answer" id="A" value="A"/>
+     	      		<label for="A">A</label>
+
+		     	      <input type="radio" name="answer" id="B" value="B"  />
+     			      <label for="B">B</label>
+
+     	      			<input type="radio" name="answer" id="C" value="C"  />
+     	      			<label for="C">C</label>
+		
+     			      <input type="radio" name="answer" id="D" value="D"  />
+     	      		<label for="D">D</label>
+            		</fieldset>
+            	</div>
+
+        </div>
+        <div data-role="footer" data-position="fixed" data-tap-toggle="false">
+           <a href="javascript:previous_question();" class="ui-btn-left visibility-hidden" id="previous-button">Previous</a>
+           <h1><span id="timer"></span></h1>
+           <a href="javascript: next_question();" class="ui-btn-right" id="next-button">Next</a>
+        </div>
+     </div>
+
+     <div data-role="page" id="result">
+         <div data-role="header" data-position="fixed" data-tap-toggle="false"><h1>Result</h1>
+            <a href="#main" class="ui-btn-right">Okay</a>
+         </div>
+         <div data-role="content">
+             <div id="progress-bar-container">
+			    <div style="border-radius:10px;background-color:#b0b0b0;height:20px;width:100%;border:2px solid #000000;">
+			      <div id="progress-bar" style="width:0%;border-radius:9px;height:100%;"></div>
+			    </div>
+			  	<div style="padding-left:5px;padding-top:5px;">Your score: <strong id="score-text">0%</strong></div>
+			</div>
+			<br/>
+         	<div id="result-content">
+         	</div>
+         	<div>
+         		<p>Need answers ?</p>
+         		<p>With answers you will also get, 300+ Practice questions to prepare you for Base SAS certification</p>
+         		<p>and, a Short exam section contains 10 questions to quickly test your Base SAS skills</p>
+         		<a href="#" id="get-pro-version-result" data-role="button">Get Pro version</a>
+         	</div>
+         </div>  
+     </div>
+
+     <div data-role="page" id="help">
+         <div data-role="header" data-position="fixed" data-tap-toggle="false">
+            <h1>Help</h1>
+            <a href="#main" class="ui-btn-right">Back</a>
+         </div>
+         <div data-role="content">
+             <h2>About the Virtual exam</h2>
+             - You will be given 64 multiple-choice questions (must achieve score of 70% correct to pass).
+             <br/><br/>
+             - You have to complete this exam in 110 minutes.
+             <br/>
+         </div>  
+     </div>
+     
+     <div data-role="page" id="top-rankers">
+         <div data-role="header" data-position="fixed" data-tap-toggle="false">
+           <h1>Top rankers</h1>
+           <a href="#main" class="ui-btn-right">Back</a>
+         </div>
+         <div data-role="content" id="top-rankers-content">
+         </div>
+     </div>
+     
+     <div data-role="page" id="settings">
+         <div data-role="header" data-position="fixed" data-tap-toggle="false">
+           <h1>Settings</h1>
+           <a href="#main" class="ui-btn-right">Back</a>
+         </div>
+         <div data-role="popup" id="user-form-popup" data-position-to="window">
+	       <p>Saved<p>
+         </div>
+         <div data-role="content">
+            <p>Please fill in the below details to submit your score to our server.</p>
+            <br/>
+            <label for="user-name">Name</label>
+            <input type="text" name="user-name" id="user-name" />
+			<label for="user-email">Email</label>
+			<input type="text" name="user-email" id="user-email" />
+			<label for="user-city">City</label>
+			<input type="text" name="user-city" id="user-city"/>
+			<label for="user-country">Country</label>
+			<input type="text" name="user-country" id="user-country"/>
+			<p style="text-align:center"><a href="javascript: submitSettingsForm()" data-role="button" data-inline="true" id="user-save-button">Save</a></p>
+         </div>
+     </div>
+    
+  </body>
+</html>
