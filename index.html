@@ -18,16 +18,17 @@
 			
 				document.addEventListener("pause", onApplicationPause, false);
 				document.addEventListener("resume", onApplicationResume, false);
-				if(getDevice() == "Android"){
+				if(getDevice() != "ios"){
 				  $('#exit-button').removeClass('visibility-hidden');
 				}
 			
 			var proVersionLink = "#";
-        	if(getDevice() == "Android"){
+        	if(getDevice() == "android"){
 				proVersionLink = "https://play.google.com/store/apps/details?id=com.jlojic.basesaspracticeexampro";
-        	}else if(getDevice() == "iPhone" || getDevice() == "iPad"){
+        	}else if(getDevice() == "ios"){
         		proVersionLink = "https://itunes.apple.com/us/app/base-sas-practice-exam-pro/id791501917?ls=1&mt=8";
-        	
+        	}else if(getDevice() == "amazon"){
+        		proVersionLink =  'http://www.amazon.com/gp/mas/dl/android?p=com.jlojic.basesaspracticeexampro';        	
         	}else{
         		proVersionLink = "#";
         	}
@@ -54,9 +55,9 @@
 			evt.preventDefault();
 			pageId = $.mobile.activePage.attr('id');
 			if(pageId == "main"){
-    			$( "#exit-dialog-popup" ).popup( "open" )
+    			$( "#exit-dialog-popup" ).popup( "open" );
     		}else if(pageId == "exam"){
-    			$( "#quit-dialog-popup" ).popup( "open" )
+    			$( "#quit-dialog-popup" ).popup( "open" );
     		}else if(pageId == "result"){
     			$.mobile.changePage('#main');
     		}else if(pageId == "help"){
@@ -471,21 +472,18 @@
 		
 		function getDevice(){
 		  var inPlatform = device.platform;
-                  //alert(inPlatform);
-                  var outPlatform = "";
+		  inPlatform = inPlatform.toLowerCase()
+          var outPlatform = "";
 		  
-		  if(inPlatform.indexOf("iPhone") >= 0)
-		     outPlatform = "iPhone";
-		  else if(inPlatform.indexOf("iPad") >= 0)
-		     outPlatform = "iPad";
-		  else if(inPlatform.indexOf("Android") >= 0)
-		     outPlatform = "Android";
-		  else if(inPlatform.indexOf("Blackberry") >= 0)
-		     outPlatofrm = "BlackBerry";
+		  if(inPlatform.indexOf("ios") >= 0)
+		     outPlatform = "ios";
+		  else if(inPlatform.indexOf("android") >= 0)
+		     outPlatform = "android";
+		  else if(inPlatform.indexOf("blackberry") >= 0)
+		     outPlatofrm = "blackBerry";
 		  
-		  	 
-		  	 //outPlatform = "iPhone";
-		  
+		 // outPlatform = 'amazon';
+		 //alert(device.uuid);
 		  
 		  return outPlatform;
 		    
